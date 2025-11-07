@@ -1,0 +1,65 @@
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+
+/**
+ * GLOBAL WAR: TERMINAL EDITION
+ * Developed by ChatGPT
+ *
+ * Instructions:
+ * - Compile: javac GlobalWarGame.java
+ * - Run: java GlobalWarGame
+ * - Follow terminal prompts to play
+ */
+
+public class GlobalWarGame {
+
+    static Scanner sc = new Scanner(System.in);
+    static Random rand = new Random();
+
+    // Game entities
+    static Country player;
+    static List<Country> aiCountries = new ArrayList<>();
+    static List<Region> worldRegions = new ArrayList<>();
+    static List<WorldEvent> events = new ArrayList<>();
+
+    public static void main(String[] args) {
+        System.out.println("=== WELCOME TO GLOBAL WAR TERMINAL EDITION ===\n");
+        initWorld();
+        initEvents();
+
+        // Player setup
+        System.out.print("Enter your country name: ");
+        String name = sc.nextLine();
+        player = new Country(name);
+
+        String[] aiNames = {"USA","UK","France","Germany","Russia","China","Japan","India","Brazil","Australia"};
+        for(String n : aiNames){
+            Country c = new Country(n);
+            aiCountries.add(c);
+        }
+
+        // Assign regions
+        assignRegions();
+
+        // Main game loop
+        while(player.isAlive()) {
+            // Player turn
+            playerTurn();
+
+            // AI turns
+            for(AIPlayer ai : generateAIPlayers()) {
+                ai.takeTurn();
+            }
+
+            // Random events
+            triggerRandomEvent();
+
+            // Show status
+            displayWorldStatus();
+
+            // Check win condition
+            if(checkVictory()) {
+                System.out.println("\n=== CONGRATULATIONS! YOU DOMINATE THE WORLD! ===");
+                break;
+            }
+        }
