@@ -1,0 +1,167 @@
+import java.util.*;
+
+public class GlobalWarGame {
+
+    // Inner class Country
+    public static class Country {
+        private String name;
+        private int troops;
+        private int resources;
+        private boolean conquered;
+
+        public Country(String name, int troops, int resources) {
+            this.name = name;
+            this.troops = troops;
+            this.resources = resources;
+            this.conquered = false;
+        }
+
+        public String getName() { return name; }
+        public int getTroops() { return troops; }
+        public int getResources() { return resources; }
+        public boolean isConquered() { return conquered; }
+
+        public void addTroops(int n) { troops += n; }
+        public void spendResources(int n) { resources -= n; }
+        public void conquer() { conquered = true; }
+
+        public boolean attack(Country other) {
+            if (troops <= 0 || other.isConquered()) return false;
+            int attackPower = troops + (int)(Math.random() * 10);
+            int defensePower = other.troops + (int)(Math.random() * 10);
+            if (attackPower > defensePower) {
+                other.conquer();
+                return true;
+            } else {
+                troops -= 1 + (int)(Math.random() * 5);
+                if (troops < 0) troops = 0;
+                return false;
+            }
+        }
+
+        public void generateResources() {
+            resources += 1 + (int)(Math.random() * 3);
+        }
+
+        public void recruitTroops() {
+            if(resources >= 2) {
+                troops += resources / 2;
+                resources = resources % 2;
+            }
+        }
+    }
+
+    // Inner class AI Player
+    public static class AIPlayer {
+        private Country country;
+
+        public AIPlayer(Country country) { this.country = country; }
+
+        public void takeTurn(List<Country> countries) {
+            country.generateResources();
+            country.recruitTroops();
+
+            // Attack a random unconquered country
+            List<Country> targets = new ArrayList<>();
+            for(Country c : countries) if(c != country && !c.isConquered()) targets.add(c);
+
+            if(targets.size() > 0) {
+                Country target = targets.get(new Random().nextInt(targets.size()));
+                boolean result = country.attack(target);
+                System.out.println(country.getName() + " attacked " + target.getName() + (result ? " and conquered it!" : " but failed."));
+            }
+        }
+    }
+
+    // Main game
+    public static void main(String[] args) {
+        List<Country> countries = new ArrayList<>();
+        List<AIPlayer> aiPlayers = new ArrayList<>();
+        Random rand = new Random();
+
+        // List of all countries (195+)
+        String[] allCountries = {
+            "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia",
+            "Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium",
+            "Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria",
+            "Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad",
+            "Chile","China","Colombia","Comoros","Congo","Costa Rica","Croatia","Cuba","Cyprus","Czechia","Denmark",
+            "Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea",
+            "Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana",
+            "Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland",
+            "India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan",
+            "Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya",
+            "Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta",
+            "Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia",
+            "Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand",
+            "Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau",
+            "Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar",
+            "Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines",
+            "Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone",
+            "Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan",
+            "Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania",
+            "Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
+            "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan",
+            "Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"
+        };
+
+        // Initialize countries with random troops/resources
+        for(String c : allCountries) {
+            countries.add(new Country(c, 20 + rand.nextInt(50), 10 + rand.nextInt(30)));
+        }
+
+        // Choose human player
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Choose your country by number:");
+        for(int i = 0; i < countries.size(); i++) {
+            System.out.println(i + ": " + countries.get(i).getName());
+        }
+        int choice = sc.nextInt();
+        Country human = countries.get(choice);
+        System.out.println("You are: " + human.getName());
+
+        // AI Players
+        for(Country c : countries) if(c != human) aiPlayers.add(new AIPlayer(c));
+
+        // Game Loop
+        while(true) {
+            System.out.println("\n=== World Status ===");
+            for(Country c : countries) {
+                System.out.printf("%-20s | Troops: %3d | Resources: %2d | %s\n", 
+                    c.getName().substring(0, Math.min(20, c.getName().length())),
+                    c.getTroops(),
+                    c.getResources(),
+                    c.isConquered() ? "Conquered" : "Free");
+            }
+
+            // Human turn
+            System.out.println("\nYour turn! Choose a country to attack by number (-1 to skip):");
+            for(int i = 0; i < countries.size(); i++) {
+                if(countries.get(i) != human && !countries.get(i).isConquered())
+                    System.out.println(i + ": " + countries.get(i).getName());
+            }
+            int targetIndex = sc.nextInt();
+            if(targetIndex >= 0 && targetIndex < countries.size() && countries.get(targetIndex) != human) {
+                boolean result = human.attack(countries.get(targetIndex));
+                System.out.println(result ? "You conquered " + countries.get(targetIndex).getName() + "!" : "Attack failed.");
+            }
+
+            human.generateResources();
+            human.recruitTroops();
+
+            // AI turns
+            for(AIPlayer ai : aiPlayers) ai.takeTurn(countries);
+
+            // Check win/loss
+            if(countries.stream().allMatch(c -> c.isConquered() || c == human)) {
+                System.out.println("Congratulations! You control the world!");
+                break;
+            }
+            if(human.isConquered()) {
+                System.out.println("You were conquered! Game over!");
+                break;
+            }
+        }
+        sc.close();
+    }
+}
