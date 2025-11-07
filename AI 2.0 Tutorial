@@ -1,0 +1,187 @@
+Global War: Terminal Edition
+
+A turn-based, terminal-based strategy game in Java where you control a country and compete against AI countries to dominate the world.
+
+📦 Setup
+
+Clone the repository (or download the .java file):
+
+git clone <your-repo-url>
+cd <repo-folder>
+
+
+Make sure you have Java installed (Java 8+). Check with:
+
+java -version
+javac -version
+
+🛠 Compilation
+
+Compile the game using javac:
+
+javac GlobalWarGame.java
+
+
+This will generate a GlobalWarGame.class file in the same folder.
+
+▶ Running the Game
+
+Run the game with:
+
+java GlobalWarGame
+
+
+You will see a welcome message and prompts to:
+
+Enter your country name
+
+Choose your starting region
+
+The AI will automatically control other countries.
+
+🎮 How to Play
+
+The game is turn-based. On your turn, you can:
+
+Build Military Units
+
+Army: 10 resources
+
+Navy: 15 resources
+
+Air Force: 20 resources
+
+Expand into New Regions
+
+Capture unowned regions.
+
+View Country Status
+
+Check resources, military, and regions owned.
+
+End Turn
+
+Let AI take their turn.
+
+💣 AI Behavior
+
+Builds units automatically.
+
+Attempts to attack your or other AI regions.
+
+AI attacks use a probabilistic system based on military power.
+
+🌎 World Events
+
+Events happen randomly after each turn (30% chance).
+
+Examples:
+
+Economic Boom (+resources)
+
+Economic Crisis (-resources)
+
+Natural Disaster (-resources)
+
+Technological Breakthrough (+resources)
+
+🏆 Victory Condition
+
+You win if you control more than half of all regions.
+
+Game over occurs if your country loses all regions.
+
+⚙️ Game Mechanics
+
+Military Power = Army*5 + Navy*8 + AirForce*12
+
+Each region is represented by a Region object with ownership.
+
+AI uses simple strategy to expand and attack.
+
+Resources are required to build units.
+
+🔄 Gameplay Flow Diagram
++--------------------+
+| Start Game         |
++--------------------+
+          |
+          v
++--------------------+
+| Choose Country     |
++--------------------+
+          |
+          v
++--------------------+
+| Choose Starting    |
+| Region             |
++--------------------+
+          |
+          v
++--------------------+
+| Player Turn        |
++--------------------+
+| - Build Units      |
+| - Expand Region    |
+| - View Status      |
+| - End Turn         |
++--------------------+
+          |
+          v
++--------------------+
+| AI Turns           |
++--------------------+
+| - Build Units      |
+| - Expand Region    |
+| - Attack Player    |
++--------------------+
+          |
+          v
++--------------------+
+| Random World Event |
++--------------------+
+          |
+          v
++--------------------+
+| Check Victory /    |
+| Defeat             |
++--------------------+
+          |
+     [Yes] / [No]
+          |
+          v
+   Loop back to Player Turn
+
+🏗 Game Structure (Classes Overview)
+Class Name	Purpose
+GlobalWarGame	Main class: starts game, loops turns, handles I/O
+Country	Represents each country: resources, military, regions
+Region	Represents regions: owner, resources
+AIPlayer	Controls AI country behavior
+Event	Represents random world events
+✅ Example Session
+=== WELCOME TO GLOBAL WAR TERMINAL EDITION ===
+Enter your country name: Atlantis
+
+Choose your starting region:
+1. North America
+2. South America
+3. Europe
+4. Asia
+5. Africa
+6. Oceania
+> 3
+
+=== YOUR TURN ===
+Choose an action:
+1. Build Military Units
+2. Expand into new region
+3. View Country Status
+4. End Turn
+> 1
+Choose unit to build:
+1. Army (Cost: 10 resources)
+2. Navy (Cost: 15 resources)
+3. Air Force (Cost: 20 resources)
+> 1
+Army built!
