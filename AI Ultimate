@@ -1,0 +1,346 @@
+import java.util.ArrayList;
+import java.util.List;
+
+public class Country {
+    private String name;
+    private int population;
+    private int armyStrength;
+    private int resources;
+    private boolean alive;
+    
+    private List<Country> conqueredCountries; // Tracks countries conquered by this country
+
+    public Country(String name, int population, int armyStrength, int resources) {
+        this.name = name;
+        this.population = population;
+        this.armyStrength = armyStrength;
+        this.resources = resources;
+        this.alive = true;
+        this.conqueredCountries = new ArrayList<>();
+    }
+
+    // Getters
+    public String getName() { return name; }
+    public int getPopulation() { return population; }
+    public int getArmyStrength() { return armyStrength; }
+    public int getResources() { return resources; }
+    public boolean isAlive() { return alive; }
+    public List<Country> getConqueredCountries() { return conqueredCountries; }
+
+    // Setters / Modifiers
+    public void loseArmy(int amount) {
+        armyStrength -= amount;
+        if (armyStrength < 0) armyStrength = 0;
+        if (armyStrength == 0) alive = false;
+    }
+
+    public void gainArmy(int amount) {
+        armyStrength += amount;
+    }
+
+    public void addConqueredCountry(Country c) {
+        conqueredCountries.add(c);
+    }
+
+    // AI attack method
+    public void attack(Country target) {
+        if (!alive ||
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class GameEngine {
+    private List<Country> countries;
+    private Random random;
+
+    public GameEngine() {
+        countries = new ArrayList<>();
+        random = new Random();
+    }
+
+    // Add a country to the game
+    public void addCountry(Country c) {
+        countries.add(c);
+    }
+
+    // Start the game loop
+    public void startGame(int turns) {
+        for (int t = 1; t <= turns; t++) {
+            System.out.println("\n--- Turn " + t + " ---");
+            takeTurn();
+            printStatus();
+        }
+
+        System.out.println("\nGame over!");
+    }
+
+    // Each turn, each country takes an action
+    private void takeTurn() {
+        for (Country c : countries) {
+            if (!c.isAlive()) continue;
+
+            Country target = selectRandomTarget(c);
+            if (target != null) {
+                c.attack(target);
+            }
+        }
+    }
+
+    // Select a random target for a country to attack
+    private Country selectRandomTarget(Country attacker) {
+        List<Country> possibleTargets = new ArrayList<>();
+        for (Country c : countries) {
+            if (c != attacker && c.isAlive()) {
+                possibleTargets.add(c);
+            }
+        }
+
+        if (possibleTargets.isEmpty()) return null;
+
+        return possibleTargets.get(random.nextInt(possibleTargets.size()));
+    }
+
+    // Print current status of all countries
+    private void printStatus() {
+        System.out.println("\n--- Status ---");
+        for (Country c : countries) {
+            String status = c.isAlive() ? "Alive" : "Dead";
+            System.out.println(c.getName() + " | Army: " + c.getArmyStrength() + " | Status: " + status
+                    + " | Conquered: " + c.getConqueredCountries().size());
+        }
+    }
+}
+import java.util.Scanner;
+
+public class GlobalWarGame {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Initialize game engine
+        GameEngine engine = new GameEngine();
+        engine.initializeCountries(); // creates all countries with AI
+
+        System.out.println("Welcome to Global War Game!");
+        System.out.println("All countries are initialized with AI.");
+
+        boolean gameRunning = true;
+
+        while (gameRunning) {
+            System.out.println("\n--- Current World Status ---");
+            engine.displayWorldStatus();
+
+            System.out.println("\nPress Enter to simulate a turn, or type 'exit' to quit:");
+            String input = scanner.nextLine();
+            if (input.equalsIgnoreCase("exit")) {
+                gameRunning = false;
+                break;
+            }
+
+            // Run AI for all countries
+            engine.simulateTurn();
+
+            // Optional: you can add human player interactions here
+            // e.g., let player pick a country and attack
+        }
+
+        System.out.println("Game Over! Thanks for playing.");
+        scanner.close();
+    }
+}
+import java.util.ArrayList;
+import java.util.Random;
+
+public class AIPlayer {
+
+    private Country country;
+    private Random random;
+
+    public AIPlayer(Country country) {
+        this.country = country;
+        this.random = new Random();
+    }
+
+    // Simulate AI turn
+    public void takeTurn(ArrayList<Country> world) {
+        // 1. Produce resources
+        country.produceResources();
+
+        // 2. Decide to attack
+        Country target = selectTarget(world);
+        if (target != null) {
+            attack(target);
+        } else {
+            System.out.println(country.getName() + " is focusing on building resources this turn.");
+        }
+    }
+
+    // Choose a logical target: neighbor or weaker country
+    private Country selectTarget(ArrayList<Country> world) {
+        ArrayList<Country> possibleTargets = new ArrayList<>();
+        for (Country c : world) {
+            if (!c.equals(country) && !c.isConquered() && isNeighborOrWeak(c)) {
+                possibleTargets.add(c);
+            }
+        }
+
+        if (possibleTargets.isEmpty()) return null;
+
+        // Randomly pick among logical targets
+        return possibleTargets.get(random.nextInt(possibleTargets.size()));
+    }
+
+    // Check if target is a logical choice
+    private boolean isNeighborOrWeak(Country target) {
+        // Logical criteria:
+        // 1. Neighboring countries
+        // 2. Significantly weaker military power
+        return country.isNeighbor(target) || target.getTotalMilitaryPower() < country.getTotalMilitaryPower() * 0.7;
+    }
+
+    // Perform attack
+    private void attack(Country target) {
+        int myPower = country.getTotalMilitaryPower();
+        int targetPower = target.getTotalMilitaryPower();
+
+        // Simulate battle with some randomness
+        double attackFactor = 0.6 + (Math.random() * 0.8); // 0.6 to 1.4
+        if (myPower * attackFactor > targetPower) {
+            target.setConquered(true);
+            country.addTerritory(target);
+            System.out.println("Attack successful! " + c
+import java.util.*;
+
+public class GlobalWarGame {
+
+    public static void main(String[] args) {
+
+        // 1. Initialize all countries
+        List<Country> allCountries = new ArrayList<>();
+        // Example initialization - replace with 195+ countries
+        allCountries.add(new Country("USA", 100, 200));
+        allCountries.add(new Country("China", 120, 220));
+        allCountries.add(new Country("India", 110, 210));
+        // TODO: Add all 195 countries + de facto and puppet states
+
+        // 2. Initialize AI players
+        List<AIPlayer> aiPlayers = new ArrayList<>();
+        for (Country c : allCountries) {
+            aiPlayers.add(new AIPlayer(c, allCountries));
+        }
+
+        // 3. Game loop
+        int turn = 1;
+        boolean gameOver = false;
+        while (!gameOver) {
+            System.out.println("\n=== Turn " + turn + " ===");
+
+            // Each AI takes its turn
+            for (AIPlayer ai : aiPlayers) {
+                ai.takeTurn();
+            }
+
+            // Check if one country controls all others
+            Country potentialWinner = null;
+            int conqueredCount = 0;
+            for (Country c : allCountries) {
+                if (!c.isConquered()) {
+                    potentialWinner = c;
+                    conqueredCount++;
+                }
+            }
+
+            if (conqueredCount == 1) {
+                System.out.println("\nGAME OVER! " + potentialWinner.getName() + " has conquered the world!");
+                gameOver = true;
+            }
+
+            turn++;
+
+            // Optional: slow down turns for readability
+            try {
+                Thread.sleep(1000); // 1 second per turn
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+}
+import java.util.*;
+
+class Sea {
+    private String name;
+    private Country controller; // The country controlling this sea
+
+    public Sea(String name) {
+        this.name = name;
+        this.controller = null; // Initially uncontrolled
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Country getController() {
+        return controller;
+    }
+
+    public void setController(Country c) {
+        this.controller = c;
+    }
+}
+
+class Country {
+    private String name;
+    private int landPower;
+    private int navalPower;
+    private boolean conquered;
+    private List<Sea> seasControlled;
+
+    public Country(String name, int landPower, int navalPower) {
+        this.name = name;
+        this.landPower = landPower;
+        this.navalPower = navalPower;
+        this.conquered = false;
+        this.seasControlled = new ArrayList<>();
+    }
+
+    public String getName() { return name; }
+    public int getLandPower() { return landPower; }
+    public int getNavalPower() { return navalPower; }
+    public boolean isConquered() { return conquered; }
+    public void conquer() { conquered = true; }
+
+    public List<Sea> getSeasControlled() { return seasControlled; }
+
+    public void claimSea(Sea sea) {
+        if (!seasControlled.contains(sea)) {
+            seasControlled.add(sea);
+            sea.setController(this);
+            System.out.println(name + " now controls the sea: " + sea.getName());
+        }
+    }
+}
+
+class AIPlayer {
+    private Country country;
+    private List<Country> allCountries;
+    private List<Sea> allSeas;
+
+    public AIPlayer(Country country, List<Country> allCountries, List<Sea> allSeas) {
+        this.country = country;
+        this.allCountries = allCountries;
+        this.allSeas = allSeas;
+    }
+
+    public void takeTurn() {
+        // Example: Claim the sea with lowest naval control
+        for (Sea sea : allSeas) {
+            if (sea.getController() == null || country.getNavalPower() > sea.getController().getNavalPower()) {
+                country.claimSea(sea);
+            }
+        }
+
+        // Existing attack logic can go here...
+    }
+}
