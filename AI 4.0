@@ -1,0 +1,284 @@
+import java.util.*;
+
+// --- Country Class ---
+class Country {
+    private String name;
+    private List<Region> regions = new ArrayList<>();
+    private int militaryPower = 50;
+    private int resources = 50;
+
+    public Country(String name) {
+        this.name = name;
+    }
+
+    public String getName() { return name; }
+
+    public void addRegion(Region r) {
+        regions.add(r);
+        r.setOwner(this);
+    }
+
+    public List<Region> getRegions() { return regions; }
+
+    public int getMilitaryPower() { return militaryPower; }
+    public void addMilitaryPower(int amount) { militaryPower += amount; }
+
+    public int getResources() { return resources; }
+    public void addResources(int amount) { resources += amount; }
+
+    public int getTotalMilitaryPower() {
+        int total = militaryPower;
+        for (Region r : regions) total += r.getDefenseBonus();
+        return total;
+    }
+}
+
+// --- Region Class ---
+class Region {
+    private String name;
+    private Country owner = null;
+    private int defenseBonus;
+
+    public Region(String name) {
+        this.name = name;
+        this.defenseBonus = new Random().nextInt(20) + 5; // random defense bonus
+    }
+
+    public String getName() { return name; }
+    public Country getOwner() { return owner; }
+    public void setOwner(Country c) { owner = c; }
+    public int getDefenseBonus() { return defenseBonus; }
+}
+
+// --- AIPlayer Class ---
+class AIPlayer {
+    private Country country;
+    private Random rand = new Random();
+
+    public AIPlayer(Country country) { this.country = country; }
+
+    public Country getCountry() { return country; }
+
+    public void takeTurn(List<Country> opponents) {
+        // Resource production
+        country.addResources(10 + rand.nextInt(10));
+        country.addMilitaryPower(5 + rand.nextInt(5));
+
+        // Attack random opponent
+        if (!opponents.isEmpty()) {
+            attackRandom(opponents);
+        }
+    }
+
+    private void attackRandom(List<Country> opponents) {
+        Country target = opponents.get(rand.nextInt(opponents.size()));
+        if (target.getRegions().isEmpty()) return; // skip if target has no regions
+
+        Region region = target.getRegions().get(rand.nextInt(target.getRegions().size()));
+
+        int attackPower = country.getTotalMilitaryPower() + rand.nextInt(20);
+        int defensePower = region.getDefenseBonus() + target.getTotalMilitaryPower();
+
+        if (attackPower > defensePower) {
+            target.getRegions().remove(region);
+            country.addRegion(region);
+            System.out.println("Attack successful! " + country.getName() +
+                               " conquered " + region.getName() + " from " + target.getName());
+        } else {
+            System.out.println(country.getName() + " failed to conquer " + region.getName());
+        }
+    }
+}
+
+// --- WorldEvent Class ---
+class WorldEvent {
+    private String description;
+    private int effect; // + resources or - military etc.
+
+    public WorldEvent(String desc, int effect) {
+        this.description = desc;
+        this.effect = effect;
+    }
+
+    public void trigger(Country c) {
+        c.addResources(effect);
+        System.out.println("World Event: " + description + " (" +
+                           (effect >= 0 ? "+" : "") + effect + " resources)");
+    }
+}
+
+// --- Main Game ---
+public class GlobalWarGame {
+    private static Scanner sc = new Scanner(System.in);
+    private static Random rand = new Random();
+    private static Country player;
+    private static List<Country> aiCountries = new ArrayList<>();
+    private static List<AIPlayer> aiPlayers = new ArrayList<>();
+    private static List<Region> worldRegions = new ArrayList<>();
+    private static List<WorldEvent> events = new ArrayList<>();
+
+    public static void main(String[] args) {
+        initWorld();
+        initEvents();
+
+        System.out.println("=== WELCOME TO GLOBAL WAR TERMINAL EDITION ===");
+        System.out.print("Enter your country name: ");
+        String name = sc.nextLine();
+        player = new Country(name);
+
+        String[] aiNames = {"USA","UK","France","Germany","Russia","China","Japan","India","Brazil","Australia"};
+        for(String n : aiNames) {
+            Country c = new Country(n);
+            aiCountries.add(c);
+            aiPlayers.add(new AIPlayer(c));
+        }
+
+        chooseStartingRegion(player);
+
+        // Assign AI starting regions
+        for(AIPlayer ai : aiPlayers) {
+            Region r = worldRegions.get(rand.nextInt(worldRegions.size()));
+            while(r.getOwner() != null) r = worldRegions.get(rand.nextInt(worldRegions.size()));
+            ai.getCountry().addRegion(r);
+        }
+
+        // Game loop
+        boolean running = true;
+        while(running) {
+            System.out.println("\n--- Player Turn ---");
+            playerTurn();
+
+            // AI turns
+            for(AIPlayer ai : aiPlayers) {
+                ai.takeTurn(getOpponents(ai.getCountry()));
+            }
+
+            // Random world event
+            if(rand.nextInt(100) < 20) { // 20% chance
+                WorldEvent e = events.get(rand.nextInt(events.size()));
+                e.trigger(player);
+            }
+
+            // Check victory
+            if(player.getRegions().size() == worldRegions.size()) {
+                System.out.println("Congratulations! You conquered the world!");
+                running = false;
+            } else if(player.getRegions().isEmpty()) {
+                System.out.println("You lost all regions! Game Over.");
+                running = false;
+            }
+        }
+    }
+
+    private static void initWorld() {
+        String[] regionNames = {"North America","South America","Europe","Africa","Asia","Australia","Antarctica"};
+        for(String name : regionNames) {
+            worldRegions.add(new Region(name));
+        }
+    }
+
+    private static void initEvents() {
+        events.add(new WorldEvent("Resource Boom", 20));
+        events.add(new WorldEvent("Natural Disaster", -15));
+        events.add(new WorldEvent("Trade Agreement", 10));
+    }
+
+    private static void chooseStartingRegion(Country c) {
+        System.out.println("\nChoose your starting region:");
+        for(int i=0;i<worldRegions.size();i++) {
+            System.out.println((i+1)+". "+worldRegions.get(i).getName());
+        }
+        int choice = -1;
+        while(choice < 1 || choice > worldRegions.size()) {
+            try { choice = Integer.parseInt(sc.nextLine()); } catch(Exception e){ choice=-1; }
+        }
+        Region selected = worldRegions.get(choice-1);
+        c.addRegion(selected);
+        System.out.println("You chose: " + selected.getName());
+    }
+
+    private static void playerTurn() {
+        System.out.println("Resources: "+player.getResources()+", Military: "+player.getMilitaryPower());
+        System.out.println("Regions Owned: ");
+        for(Region r : player.getRegions()) {
+            System.out.println("- " + r.getName());
+        }
+
+        System.out.println("\nActions:");
+        System.out.println("1. Produce Resources");
+        System.out.println("2. Train Military");
+        System.out.println("3. Attack Region");
+
+        int choice = -1;
+        while(choice < 1 || choice > 3) {
+            try { choice = Integer.parseInt(sc.nextLine()); } catch(Exception e){ choice=-1; }
+        }
+
+        switch(choice) {
+            case 1:
+                int produced = rand.nextInt(20) + 10;
+                player.addResources(produced);
+                System.out.println("Produced "+produced+" resources.");
+                break;
+            case 2:
+                int cost = 10;
+                if(player.getResources() >= cost) {
+                    player.addResources(-cost);
+                    player.addMilitaryPower(10);
+                    System.out.println("Trained military. Military +10, Resources -"+cost);
+                } else {
+                    System.out.println("Not enough resources!");
+                }
+                break;
+            case 3:
+                attackMenu();
+                break;
+        }
+    }
+
+    private static void attackMenu() {
+        List<Country> targets = getOpponents(player);
+        if(targets.isEmpty()) { System.out.println("No targets available."); return; }
+
+        System.out.println("Choose a country to attack:");
+        for(int i=0;i<targets.size();i++) {
+            System.out.println((i+1)+". "+targets.get(i).getName());
+        }
+        int choice = -1;
+        while(choice < 1 || choice > targets.size()) {
+            try { choice = Integer.parseInt(sc.nextLine()); } catch(Exception e){ choice=-1; }
+        }
+        Country target = targets.get(choice-1);
+        if(target.getRegions().isEmpty()) {
+            System.out.println("Target has no regions left!");
+            return;
+        }
+        Region region = target.getRegions().get(rand.nextInt(target.getRegions().size()));
+
+        int attackPower = player.getTotalMilitaryPower() + rand.nextInt(20);
+        int defensePower = region.getDefenseBonus() + target.getTotalMilitaryPower();
+
+        if(attackPower > defensePower) {
+            target.getRegions().remove(region);
+            player.addRegion(region);
+            System.out.println("Attack successful! You conquered "+region.getName()+" from "+target.getName());
+        } else {
+            System.out.println("Attack failed!");
+        }
+    }
+
+    private static List<Country> getOpponents(Country self) {
+        List<Country> opponents = new ArrayList<>();
+        if(self != player) {
+            if(player.getRegions().size()>0) opponents.add(player);
+            for(AIPlayer ai : aiPlayers) {
+                if(ai.getCountry()!=self && ai.getCountry().getRegions().size()>0) opponents.add(ai.getCountry());
+            }
+        } else {
+            for(AIPlayer ai : aiPlayers) {
+                if(ai.getCountry().getRegions().size()>0) opponents.add(ai.getCountry());
+            }
+        }
+        return opponents;
+    }
+}
