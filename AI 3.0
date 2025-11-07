@@ -1,0 +1,33 @@
+import java.util.*;
+
+// Main Game Class
+public class GlobalWarGame {
+    static Scanner sc = new Scanner(System.in);
+    static Random rand = new Random();
+
+    static Country player;
+    static List<Country> aiCountries = new ArrayList<>();
+    static List<AIPlayer> aiPlayers = new ArrayList<>();
+    static List<Region> worldRegions = new ArrayList<>();
+    static List<WorldEvent> events = new ArrayList<>();
+
+    public static void main(String[] args) {
+        System.out.println("=== WELCOME TO GLOBAL WAR TERMINAL EDITION ===");
+        
+        initWorld();
+        initEvents();
+
+        System.out.print("Enter your country name: ");
+        String name = sc.nextLine();
+        player = new Country(name);
+
+        // Initialize AI countries
+        String[] aiNames = {"USA","UK","France","Germany","Russia","China","Japan","India","Brazil","Australia"};
+        for(String n : aiNames) {
+            Country c = new Country(n);
+            aiCountries.add(c);
+            aiPlayers.add(new AIPlayer(c));
+        }
+
+        // Choose starting region
+        System.out.println("\nCho
