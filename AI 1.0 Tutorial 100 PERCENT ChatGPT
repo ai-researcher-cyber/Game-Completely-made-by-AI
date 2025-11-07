@@ -1,0 +1,79 @@
+
+### 1️⃣ Install Java
+
+* Make sure Java is installed on your computer.
+* Check by opening a terminal (or command prompt) and typing:
+
+```bash
+java -version
+```
+
+You should see a version number.
+
+---
+
+### 2️⃣ Get the Game Files
+
+* Make sure you have `GlobalWarGame.java` saved on your computer.
+
+---
+
+### 3️⃣ Compile the Game
+
+* Open a terminal in the folder where the file is saved.
+* Type:
+
+```bash
+javac GlobalWarGame.java
+```
+
+* This creates a file called `GlobalWarGame.class`.
+
+---
+
+### 4️⃣ Run the Game
+
+* In the same terminal, type:
+
+```bash
+java GlobalWarGame
+```
+
+* You’ll see a welcome message and the credits.
+
+---
+
+### 5️⃣ Start Playing
+
+1. **Enter your country name** – pick anything you like.
+2. **Choose your starting region** – this is your first territory.
+3. Each turn, choose an action:
+
+   * **Train units** – build your army, navy, and air force.
+   * **Produce resources** – collect oil, steel, and food.
+   * **Attack a region** – try to conquer enemy territories.
+   * **Research tech** – increase technology level to boost military.
+   * **Pass** – skip your turn if you want.
+
+---
+
+### 6️⃣ AI and Events
+
+* Other countries are controlled by AI.
+* Random world events can help or hurt your resources.
+
+---
+
+### 7️⃣ Ending the Game
+
+* The game ends if you lose all your regions or control all regions.
+* Rankings and credits will be displayed at the end.
+
+---
+
+### 8️⃣ Tips
+
+* Balance **training units** and **producing resources**.
+* Tech level matters for successful attacks.
+* Watch the AI; they can attack at any time!
+USE JAVAC go in TextEdit and Save the File as :GlobalWarGame.java and do the Tutorial
