@@ -1,0 +1,183 @@
+import java.util.*;
+
+class Country {
+    private String name;
+    private int troops;
+    private int resources;
+
+    public Country(String name, int troops, int resources) {
+        this.name = name;
+        this.troops = troops;
+        this.resources = resources;
+    }
+
+    public String getName() { return name; }
+    public int getTroops() { return troops; }
+    public int getResources() { return resources; }
+
+    public void addTroops(int n) { troops += n; }
+    public void removeTroops(int n) { troops = Math.max(0, troops - n); }
+    public void addResources(int n) { resources += n; }
+    public void spendResources(int n) { resources = Math.max(0, resources - n); }
+
+    public boolean isDefeated() { return troops <= 0; }
+}
+
+class Region {
+    private String name;
+    private Country owner;
+
+    public Region(String name, Country owner) {
+        this.name = name;
+        this.owner = owner;
+    }
+
+    public String getName() { return name; }
+    public Country getOwner() { return owner; }
+    public void setOwner(Country c) { owner = c; }
+}
+
+class AIPlayer {
+    private Country country;
+    private Random rand = new Random();
+
+    public AIPlayer(Country country) { this.country = country; }
+
+    public void takeTurn(List<Region> regions) {
+        // Produce resources
+        country.addResources(10);
+        // Recruit troops if possible
+        if(country.getResources() >= 10) {
+            country.addTroops(5);
+            country.spendResources(10);
+        }
+        // Attack random enemy region
+        List<Region> enemies = new ArrayList<>();
+        for (Region r : regions) {
+            if (r.getOwner() != country) enemies.add(r);
+        }
+        if(!enemies.isEmpty()) {
+            Region target = enemies.get(rand.nextInt(enemies.size()));
+            battle(target);
+        }
+    }
+
+    private void battle(Region target) {
+        Country defender = target.getOwner();
+        int attackPower = country.getTroops();
+        int defensePower = defender.getTroops();
+        System.out.println("\u001B[31m" + country.getName() + " attacks " + target.getName() + "\u001B[0m");
+        
+        // Simple battle simulation
+        while(attackPower > 0 && defensePower > 0) {
+            int aDamage = rand.nextInt(5) + 1;
+            int dDamage = rand.nextInt(5) + 1;
+            attackPower -= dDamage;
+            defensePower -= aDamage;
+            System.out.println("Attack Power: " + Math.max(0, attackPower) + " | Defense Power: " + Math.max(0, defensePower));
+        }
+
+        if(attackPower > 0) {
+            System.out.println("\u001B[32m" + country.getName() + " conquered " + target.getName() + "\u001B[0m");
+            target.setOwner(country);
+            country.removeTroops(country.getTroops() - attackPower);
+        } else {
+            System.out.println("\u001B[33mAttack failed!\u001B[0m");
+            country.removeTroops(country.getTroops());
+        }
+    }
+}
+
+public class GlobalWarGame {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        Country human = new Country("Human", 50, 50);
+        Country ai = new Country("AI", 50, 50);
+
+        List<Region> regions = new ArrayList<>();
+        regions.add(new Region("Northland", human));
+        regions.add(new Region("Eastland", ai));
+        regions.add(new Region("Southland", human));
+        regions.add(new Region("Westland", ai));
+
+        AIPlayer aiPlayer = new AIPlayer(ai);
+
+        while(true) {
+            // Display map
+            displayMap(regions);
+
+            // Human turn
+            System.out.println("\nYour turn! Type 'recruit' or 'attack'");
+            String action = sc.nextLine().trim().toLowerCase();
+            if(action.equals("recruit") && human.getResources() >= 10) {
+                human.addTroops(5);
+                human.spendResources(10);
+                System.out.println("Recruited 5 troops!");
+            } else if(action.equals("attack")) {
+                System.out.println("Which region do you want to attack?");
+                for(Region r : regions) {
+                    if(r.getOwner() != human)
+                        System.out.println("- " + r.getName());
+                }
+                String targetName = sc.nextLine().trim();
+                Region target = null;
+                for(Region r : regions) if(r.getName().equalsIgnoreCase(targetName)) target = r;
+                if(target != null) battle(human, target);
+                else System.out.println("Invalid target.");
+            }
+
+            // AI turn
+            aiPlayer.takeTurn(regions);
+
+            // Endgame check
+            boolean humanAlive = regions.stream().anyMatch(r -> r.getOwner() == human);
+            boolean aiAlive = regions.stream().anyMatch(r -> r.getOwner() == ai);
+            if(!humanAlive) { System.out.println("\u001B[31mYou lost!\u001B[0m"); break; }
+            if(!aiAlive) { System.out.println("\u001B[32mYou won!\u001B[0m"); break; }
+        }
+    }
+
+    private static void battle(Country attacker, Region target) {
+        Country defender = target.getOwner();
+        Random rand = new Random();
+        int attackPower = attacker.getTroops();
+        int defensePower = defender.getTroops();
+
+        System.out.println("\u001B[31m" + attacker.getName() + " attacks " + target.getName() + "\u001B[0m");
+
+        while(attackPower > 0 && defensePower > 0) {
+            int aDamage = rand.nextInt(5) + 1;
+            int dDamage = rand.nextInt(5) + 1;
+            attackPower -= dDamage;
+            defensePower -= aDamage;
+            System.out.println("Attack Power: " + Math.max(0, attackPower) + " | Defense Power: " + Math.max(0, defensePower));
+        }
+
+        if(attackPower > 0) {
+            System.out.println("\u001B[32m" + attacker.getName() + " conquered " + target.getName() + "\u001B[0m");
+            target.setOwner(attacker);
+            attacker.removeTroops(attacker.getTroops() - attackPower);
+        } else {
+            System.out.println("\u001B[33mAttack failed!\u001B[0m");
+            attacker.removeTroops(attacker.getTroops());
+        }
+    }
+
+    private static void displayMap(List<Region> regions) {
+        System.out.println("\n===== GLOBAL WAR MAP =====");
+        for(Region r : regions) {
+            Country c = r.getOwner();
+            String color = c.getName().equals("Human") ? "\u001B[32m" : "\u001B[31m";
+            String reset = "\u001B[0m";
+            String troopsBar = repeat("█", Math.max(1, c.getTroops()/10));
+            String resBar = repeat("▓", Math.max(1, c.getResources()/5));
+            System.out.println(color + r.getName() + " | Troops: " + troopsBar + " (" + c.getTroops() + ")" +
+                               " | Resources: " + resBar + " (" + c.getResources() + ")" + reset);
+        }
+    }
+
+    private static String repeat(String s, int times) {
+        return new String(new char[times]).replace("\0", s);
+    }
+}
