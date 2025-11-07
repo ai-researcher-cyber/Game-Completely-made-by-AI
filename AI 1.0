@@ -1,0 +1,331 @@
+import java.util.*;
+
+// ====================== MAIN GAME ======================
+public class GlobalWarGame {
+
+    static Scanner sc = new Scanner(System.in);
+    static Random rand = new Random();
+
+    static Country player;
+    static List<Country> aiCountries = new ArrayList<>();
+    static List<AIPlayer> aiPlayers = new ArrayList<>();
+    static List<Region> worldRegions = new ArrayList<>();
+    static List<WorldEvent> events = new ArrayList<>();
+
+    public static void main(String[] args) {
+        System.out.println("=== WELCOME TO GLOBAL WAR TERMINAL EDITION ===");
+        initWorld();
+        initEvents();
+
+        // Player chooses country name
+        System.out.print("Enter your country name: ");
+        String name = sc.nextLine();
+        player = new Country(name);
+
+        // Create AI countries for the remaining regions
+        String[] aiNames = {"USA","UK","France","Germany","Russia","China","Japan","India","Brazil","Australia"};
+        for(String n : aiNames) {
+            Country c = new Country(n);
+            aiCountries.add(c);
+            aiPlayers.add(new AIPlayer(c));
+        }
+
+        // Assign regions
+        // Player gets first region of their choice
+        System.out.println("\nChoose your starting region:");
+        for(int i=0;i<worldRegions.size();i++){
+            System.out.println((i+1)+". "+worldRegions.get(i).name);
+        }
+        int choice=-1;
+        while(choice<1 || choice>worldRegions.size()){
+            try{ choice=Integer.parseInt(sc.nextLine()); }catch(Exception e){ choice=-1; }
+        }
+        player.addRegion(worldRegions.get(choice-1));
+
+        // All other regions assigned to AI countries in round-robin
+        int aiIndex=0;
+        for(int i=0;i<worldRegions.size();i++){
+            Region r = worldRegions.get(i);
+            if(r.owner==null){
+                Country ai = aiCountries.get(aiIndex%aiCountries.size());
+                ai.addRegion(r);
+                aiIndex++;
+            }
+        }
+
+        // GAME LOOP
+        boolean running = true;
+        while(running){
+            printStatus();
+            playerTurn();
+            for(AIPlayer ai : aiPlayers){
+                ai.takeTurn(player, worldRegions);
+            }
+            triggerRandomEvents();
+            running = checkGameEnd();
+        }
+        endGame();
+        credits();
+    }
+
+    // ====================== INITIALIZATION ======================
+    public static void initWorld(){
+        String[] names = {"Alaska","Canada","USA","Mexico","Brazil","Argentina","UK","France","Germany","Italy",
+                          "Spain","Portugal","Russia","China","India","Japan","Australia","Egypt","South Africa","Saudi Arabia",
+                          "Norway","Sweden","Finland","Poland","Ukraine","Turkey","Iran","Iraq","Syria","Israel",
+                          "South Korea","North Korea","Philippines","Vietnam","Thailand","Indonesia","New Zealand","Chile","Peru",
+                          "Colombia","Venezuela","Morocco","Algeria","Libya","Nigeria","Kenya","Ethiopia","Congo","Angola","Sudan"};
+        for(String s : names){
+            worldRegions.add(new Region(s));
+        }
+    }
+
+    public static void initEvents(){
+        events.add(new WorldEvent("Global oil shortage",-10,0,0));
+        events.add(new WorldEvent("Steel boom",0,10,0));
+        events.add(new WorldEvent("Famine in some regions",0,0,-10));
+        events.add(new WorldEvent("Technological breakthrough",5,5,5));
+    }
+
+    // ====================== GAME LOGIC ======================
+    public static void printStatus(){
+        System.out.println("\n=== STATUS ===");
+        System.out.println(player);
+        for(Country c : aiCountries){
+            System.out.println(c.shortStatus());
+        }
+    }
+
+    public static void playerTurn(){
+        System.out.println("\nYour turn! Choose an action:");
+        System.out.println("1. Train units");
+        System.out.println("2. Produce resources");
+        System.out.println("3. Attack a region");
+        System.out.println("4. Research tech");
+        System.out.println("5. Pass");
+        int choice = -1;
+        while(choice<1 || choice>5){
+            try{
+                choice = Integer.parseInt(sc.nextLine());
+            }catch(Exception e){ choice=-1;}
+        }
+        switch(choice){
+            case 1: trainUnits(player); break;
+            case 2: produceResources(player); break;
+            case 3: attackRegion(player); break;
+            case 4: researchTech(player); break;
+            case 5: System.out.println("Passing turn..."); break;
+        }
+    }
+
+    public static void trainUnits(Country c){
+        System.out.println("Training units... 5 of each type added.");
+        c.units.add(new Unit("Infantry",5));
+        c.units.add(new Unit("Tank",5));
+        c.units.add(new Unit("Jet",5));
+        c.units.add(new Unit("Destroyer",5));
+    }
+
+    public static void produceResources(Country c){
+        System.out.println("Producing resources...");
+        c.resources.oil += rand.nextInt(10)+5;
+        c.resources.steel += rand.nextInt(10)+5;
+        c.resources.food += rand.nextInt(10)+5;
+    }
+
+    public static void researchTech(Country c){
+        System.out.println("Researching technology...");
+        c.techLevel += 1;
+        System.out.println("Tech level increased to " + c.techLevel);
+    }
+
+    public static void attackRegion(Country attacker){
+        System.out.println("Choose a region to attack:");
+        int i=1;
+        List<Region> targets = new ArrayList<>();
+        for(Region r : worldRegions){
+            if(!attacker.regions.contains(r)){
+                System.out.println(i + ". " + r.name + " (Owner: " + r.owner.name + ")");
+                targets.add(r);
+                i++;
+            }
+        }
+        if(targets.isEmpty()){ System.out.println("No regions to attack!"); return; }
+        int choice = -1;
+        while(choice<1 || choice>targets.size()){
+            try{ choice=Integer.parseInt(sc.nextLine()); }catch(Exception e){ choice=-1; }
+        }
+        Region target = targets.get(choice-1);
+        Country defender = target.owner;
+        boolean success = rand.nextInt(100)<50 + (attacker.getTotalMilitaryPower()-defender.getTotalMilitaryPower())/2;
+        if(success){
+            System.out.println("Attack successful! " + target.name + " captured.");
+            attacker.addRegion(target);
+            defender.removeRegion(target);
+        }else{
+            System.out.println("Attack failed. You lost some units.");
+            if(!attacker.units.isEmpty()) attacker.units.remove(0);
+        }
+    }
+
+    public static void triggerRandomEvents(){
+        if(rand.nextInt(100)<30){
+            WorldEvent e = events.get(rand.nextInt(events.size()));
+            System.out.println("\n*** EVENT: " + e.name + " ***");
+            e.apply(player);
+            for(Country c : aiCountries) e.apply(c);
+        }
+    }
+
+    public static boolean checkGameEnd(){
+        // End if player controls all regions or has no regions
+        if(player.regions.isEmpty()) return false;
+        if(player.regions.size()==worldRegions.size()) return false;
+        return true;
+    }
+
+    public static void endGame(){
+        System.out.println("\n=== GAME OVER ===");
+        List<Country> allCountries = new ArrayList<>();
+        allCountries.add(player);
+        allCountries.addAll(aiCountries);
+        allCountries.sort((a,b)->b.regions.size()-a.regions.size());
+        System.out.println("Ranking:");
+        for(Country c : allCountries){
+            System.out.println(c.name + " controls " + c.regions.size() + " regions.");
+        }
+    }
+
+    public static void credits(){
+        System.out.println("\n=== CREDITS ===");
+        System.out.println("Game created by ChatGPT (OpenAI)");
+    }
+}
+
+// ====================== COUNTRY ======================
+class Country {
+    String name;
+    List<Region> regions = new ArrayList<>();
+    List<Unit> units = new ArrayList<>();
+    Resources resources = new Resources();
+    int techLevel = 1;
+
+    public Country(String n){ name=n; }
+
+    public void addRegion(Region r){ regions.add(r); r.owner=this; }
+    public void removeRegion(Region r){ regions.remove(r); r.owner=null; }
+
+    public int getTotalMilitaryPower(){
+        int power=0;
+        for(Unit u : units) power+=u.count*u.getPower();
+        return power + techLevel*2;
+    }
+
+    public String toString(){
+        return name + " | Regions: " + regions.size() + " | Military: " + getTotalMilitaryPower() +
+               " | Tech: " + techLevel + " | Resources: " + resources;
+    }
+
+    public String shortStatus(){
+        return name + " | Regions: " + regions.size() + " | Military: " + getTotalMilitaryPower();
+    }
+}
+
+// ====================== UNIT ======================
+class Unit {
+    String type;
+    int count;
+    public Unit(String t, int c){ type=t; count=c; }
+    public int getPower(){
+        switch(type){
+            case "Infantry": return 1;
+            case "Tank": return 3;
+            case "Jet": return 5;
+            case "Destroyer": return 4;
+        }
+        return 1;
+    }
+}
+
+// ====================== REGION ======================
+class Region {
+    String name;
+    Country owner;
+    public Region(String n){ name=n; }
+}
+
+// ====================== RESOURCES ======================
+class Resources {
+    int oil=50;
+    int steel=50;
+    int food=50;
+    public String toString(){ return "Oil:" + oil + " Steel:" + steel + " Food:" + food; }
+}
+
+// ====================== AI ======================
+class AIPlayer {
+    Country country;
+    Random rand = new Random();
+    public AIPlayer(Country c){ country=c; }
+
+    public void takeTurn(Country player, List<Region> worldRegions){
+        // Random strategy
+        int choice = rand.nextInt(4);
+        switch(choice){
+            case 0: trainUnits(country); break;
+            case 1: produceResources(country); break;
+            case 2: attackRandom(country, worldRegions); break;
+            case 3: researchTech(country); break;
+        }
+    }
+
+    public void trainUnits(Country c){
+        c.units.add(new Unit("Infantry",rand.nextInt(3)+1));
+        c.units.add(new Unit("Tank",rand.nextInt(2)+1));
+        c.units.add(new Unit("Jet",rand.nextInt(1)+1));
+        c.units.add(new Unit("Destroyer",rand.nextInt(1)+1));
+    }
+
+    public void produceResources(Country c){
+        c.resources.oil += rand.nextInt(5)+1;
+        c.resources.steel += rand.nextInt(5)+1;
+        c.resources.food += rand.nextInt(5)+1;
+    }
+
+    public void researchTech(Country c){
+        c.techLevel += 1;
+    }
+
+    public void attackRandom(Country attacker, List<Region> worldRegions){
+        List<Region> targets = new ArrayList<>();
+        for(Region r : worldRegions){
+            if(r.owner!=attacker) targets.add(r);
+        }
+        if(targets.isEmpty()) return;
+        Region target = targets.get(rand.nextInt(targets.size()));
+        Country defender = target.owner;
+        boolean success = rand.nextInt(100)<50 + (attacker.getTotalMilitaryPower()-defender.getTotalMilitaryPower())/2;
+        if(success){
+            attacker.addRegion(target);
+        }else{
+            if(!attacker.units.isEmpty()) attacker.units.remove(0);
+        }
+    }
+}
+
+// ====================== EVENTS ======================
+class WorldEvent {
+    String name;
+    int oilChange, steelChange, foodChange;
+    public WorldEvent(String n,int o,int s,int f){
+        name=n; oilChange=o; steelChange=s; foodChange=f;
+    }
+    public void apply(Country c){
+        c.resources.oil += oilChange;
+        c.resources.steel += steelChange;
+        c.resources.food += foodChange;
+        if(c.resources.oil<0)c.resources.oil=0;
+        if(c.resources.steel<0)c.resources.steel=0;
+        if(c.resources.food<0)c.resources.food=0;
+    }
+}
